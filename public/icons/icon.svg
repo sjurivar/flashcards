@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Studiehjelper">
+  <rect width="512" height="512" rx="112" fill="#0b4f4a"/>
+  <rect x="124" y="82" width="264" height="348" rx="32" fill="#fffdf8"/>
+  <path fill="none" stroke="#0b4f4a" stroke-width="52" stroke-linecap="round" d="M186 196c0-52 140-52 140 8 0 44-56 56-70 92"/>
+  <circle cx="256" cy="348" r="26" fill="#0b4f4a"/>
+  <rect x="196" y="392" width="120" height="16" rx="8" fill="#7aa59f"/>
+</svg>

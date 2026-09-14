@@ -1,0 +1,137 @@
+import { href, navigate } from '@app/routing/router';
+import { CARD_STATUS_LABELS, type CardStatus } from '@shared/types';
+import { setFlash } from '@shared/ui/flash';
+import { escapeAttr, escapeHtml } from '@shared/utilities/html';
+import { listOutcomes } from '@features/learning-outcomes';
+import { emptyCardDraft, type CardDraft, type CardRecord } from '../domain/card';
+import { MAX_SOURCE, MAX_TEXT, MAX_TOPIC, type CardErrors } from '../domain/validateCard';
+import { getCard, saveCardDraft } from '../storage/cardStore';
+
+export async function renderCardForm(root: HTMLElement, id?: string): Promise<void> {
+  const existing = id ? await getCard(id) : undefined;
+  if (id && !existing) {
+    root.innerHTML = `
+      <section class="panel">
+        <h1>Kortet ble ikke funnet</h1>
+        <p><a class="button" href="${href({ name: 'cards' })}">Tilbake til biblioteket</a></p>
+      </section>
+    `;
+    return;
+  }
+
+  const outcomes = await listOutcomes();
+  const draft = existing ? draftFromCard(existing, outcomes.find((item) => item.id === existing.learningOutcomeId)?.text ?? '') : emptyCardDraft();
+  paint(root, existing ?? null, draft, {}, outcomes.map((item) => item.text));
+}
+
+function draftFromCard(card: CardRecord, learningOutcomeText: string): CardDraft {
+  return {
+    question: card.question,
+    aiAnswer: card.aiAnswer,
+    userAnswer: card.userAnswer ?? '',
+    example: card.example ?? '',
+    source: card.source ?? '',
+    learningOutcomeText,
+    topic: card.topic,
+    status: card.status,
+    isActive: card.isActive,
+  };
+}
+
+function paint(
+  root: HTMLElement,
+  existing: CardRecord | null,
+  values: CardDraft,
+  errors: CardErrors,
+  outcomeOptions: string[],
+): void {
+  const isEdit = existing !== null;
+  root.innerHTML = `
+    <section class="panel">
+      <h1>${isEdit ? 'Rediger kort' : 'Nytt kort'}</h1>
+      ${Object.keys(errors).length > 0 ? '<div class="error-summary" role="alert"><p>Skjemaet kunne ikke lagres. Rett opp feltene merket under.</p></div>' : ''}
+      <form class="card-form" data-card-form>
+        ${field('topic', 'Tema', input('topic', values.topic, MAX_TOPIC, errors.topic, true))}
+        ${field('question', 'Spørsmål', area('question', values.question, 4, errors.question, true))}
+        ${field('learningOutcomeText', 'Læringsutbytte', `
+          <input id="learningOutcomeText" name="learningOutcomeText" list="outcome-list" required maxlength="${MAX_TEXT}" value="${escapeAttr(values.learningOutcomeText)}" ${errors.learningOutcomeText ? 'aria-invalid="true"' : ''}>
+          <datalist id="outcome-list">${outcomeOptions.map((text) => `<option value="${escapeAttr(text)}"></option>`).join('')}</datalist>
+          ${error('learningOutcomeText', errors.learningOutcomeText)}
+        `)}
+        <fieldset class="answer-group">
+          <legend>AI-generert svar</legend>
+          <p class="hint">Dette er fasit-/eksempelsvaret. Det lagres separat fra din egen formulering.</p>
+          ${field('aiAnswer', 'AI-svar', area('aiAnswer', values.aiAnswer, 5, errors.aiAnswer, true))}
+        </fieldset>
+        <fieldset class="answer-group answer-group--own">
+          <legend>Din egen formulering</legend>
+          <p class="hint">Valgfritt. Når dette feltet er fylt ut, blir det hovedsvaret i øvingen.</p>
+          ${field('userAnswer', 'Egen formulering', area('userAnswer', values.userAnswer, 5, errors.userAnswer, false))}
+        </fieldset>
+        ${field('example', 'Eksempel eller praksissituasjon', area('example', values.example, 3, errors.example, false))}
+        ${field('source', 'Kilde', input('source', values.source, MAX_SOURCE, errors.source, false))}
+        <div class="field">
+          <label for="status">Status</label>
+          <select id="status" name="status" required>
+            ${Object.entries(CARD_STATUS_LABELS).map(([value, label]) => `
+              <option value="${value}"${values.status === value ? ' selected' : ''}>${escapeHtml(label)}</option>
+            `).join('')}
+          </select>
+        </div>
+        <div class="field field--check">
+          <input id="isActive" name="isActive" type="checkbox" value="1"${values.isActive ? ' checked' : ''}>
+          <label for="isActive">Aktivt kort (inngår i øving når det er forfalt)</label>
+        </div>
+        <div class="form-actions">
+          <button class="button button--primary" type="submit">${isEdit ? 'Lagre endringer' : 'Opprett kort'}</button>
+          <a class="button button--secondary" href="${href({ name: 'cards' })}">Avbryt</a>
+        </div>
+      </form>
+    </section>
+  `;
+
+  const form = root.querySelector<HTMLFormElement>('[data-card-form]');
+  form?.addEventListener('submit', async (event) => {
+    event.preventDefault();
+    if (form.dataset.submitted === '1') {
+      return;
+    }
+    form.dataset.submitted = '1';
+    const data = new FormData(form);
+    const draft: CardDraft = {
+      question: String(data.get('question') ?? ''),
+      aiAnswer: String(data.get('aiAnswer') ?? ''),
+      userAnswer: String(data.get('userAnswer') ?? ''),
+      example: String(data.get('example') ?? ''),
+      source: String(data.get('source') ?? ''),
+      learningOutcomeText: String(data.get('learningOutcomeText') ?? ''),
+      topic: String(data.get('topic') ?? ''),
+      status: String(data.get('status') ?? 'ai_utkast') as CardStatus,
+      isActive: data.get('isActive') === '1',
+    };
+    const result = await saveCardDraft(draft, existing);
+    if (!result.ok) {
+      form.dataset.submitted = '0';
+      paint(root, existing, draft, result.errors, outcomeOptions);
+      return;
+    }
+    setFlash('success', isEdit ? 'Kortet er oppdatert.' : 'Kortet er opprettet.');
+    navigate({ name: 'cards' });
+  });
+}
+
+function field(id: string, label: string, control: string): string {
+  return `<div class="field"><label for="${id}">${escapeHtml(label)}</label>${control}</div>`;
+}
+
+function input(name: string, value: string, max: number, err: string | undefined, required: boolean): string {
+  return `<input id="${name}" name="${name}" type="text" maxlength="${max}" ${required ? 'required' : ''} value="${escapeAttr(value)}" ${err ? 'aria-invalid="true"' : ''}>${error(name, err)}`;
+}
+
+function area(name: string, value: string, rows: number, err: string | undefined, required: boolean): string {
+  return `<textarea id="${name}" name="${name}" rows="${rows}" maxlength="${MAX_TEXT}" ${required ? 'required' : ''} ${err ? 'aria-invalid="true"' : ''}>${escapeHtml(value)}</textarea>${error(name, err)}`;
+}
+
+function error(id: string, message?: string): string {
+  return message ? `<p class="field-error" id="${id}-error">${escapeHtml(message)}</p>` : '';
+}

@@ -60,4 +60,15 @@ describe('site navigation', () => {
     renderLayout(root, { name: 'help' }, '<p>Hjelp</p>');
     expect(root.querySelector('[aria-current="page"]')?.textContent).toBe('Hjelp');
   });
+
+  it('marks the document as practice only on the study route', () => {
+    const root = document.querySelector('#app') as HTMLElement;
+    renderLayout(root, { name: 'practice' }, '<p>Øving</p>');
+    expect(document.body.classList.contains('is-practice')).toBe(true);
+    expect(document.documentElement.classList.contains('is-practice')).toBe(true);
+
+    renderLayout(root, { name: 'home' }, '<p>Hjem</p>');
+    expect(document.body.classList.contains('is-practice')).toBe(false);
+    expect(document.documentElement.classList.contains('is-practice')).toBe(false);
+  });
 });

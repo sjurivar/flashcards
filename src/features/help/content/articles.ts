@@ -1,8 +1,10 @@
 import { href } from '@app/routing/router';
+import { renderMobilePracticeArticle } from './mobile';
 
 export const HELP_SECTIONS = [
   { id: 'kom-i-gang', title: 'Kom i gang' },
   { id: 'slik-laerer-du', title: 'Slik lærer du med kortene' },
+  { id: 'oving-pa-mobil', title: 'Øving på mobil' },
   { id: 'ai-utkast', title: 'AI-utkast og egne formuleringer' },
   { id: 'kortbibliotek', title: 'Kortbibliotek' },
   { id: 'lagring', title: 'Hvor lagres dataene?' },
@@ -24,10 +26,11 @@ export function renderHelpArticles(): string {
       <h2>Kom i gang</h2>
       <ol>
         <li>Velg <strong>Start øving</strong> på forsiden.</li>
-        <li>Les spørsmålet og prøv å svare selv, uten å se forslaget.</li>
-        <li>Velg <strong>Vis svar</strong> når du har tenkt.</li>
-        <li>Vurder mestring: Kan ikke, Usikker eller Kan.</li>
-        <li>Fortsett til øktoppsummeringen når køen er ferdig, eller avslutt økten underveis.</li>
+        <li>Les spørsmålet. Status som <strong>AI-utkast</strong> vises før svaret. Prøv å svare selv.</li>
+        <li>Velg <strong>Vis svar</strong> når du har tenkt. Vurderingsknappene kommer deretter.</li>
+        <li>Sammenlign med <strong>forslag til svar</strong>, eller med <strong>Mitt svar</strong> hvis du har skrevet en egen formulering.</li>
+        <li>Vurder mestring: <strong>Kan ikke</strong>, <strong>Usikker</strong> eller <strong>Kan</strong>. Valget styrer neste repetisjon.</li>
+        <li>Fortsett til øktoppsummeringen, eller velg <strong>Avslutt økten</strong>. Navigasjonen kan være skjult mens økten pågår.</li>
       </ol>
       <p><button class="button button--secondary" type="button" data-replay-intro>Vis introduksjonen på nytt</button></p>
     </article>
@@ -43,6 +46,8 @@ export function renderHelpArticles(): string {
       </ul>
       <p>Vær ærlig. Målet er å øve på det som fortsatt er usikkert, ikke å samle «Kan».</p>
     </article>
+
+    ${renderMobilePracticeArticle()}
 
     <article class="help-article" id="ai-utkast">
       <h2>AI-utkast og egne formuleringer</h2>
@@ -95,6 +100,7 @@ export function renderHelpArticles(): string {
       <p>I Chrome: åpne menyen og velg <strong>Installer app</strong> eller <strong>Legg til på startskjerm</strong>.</p>
       <h3>iPhone og iPad</h3>
       <p>I Safari: trykk på <strong>Del</strong> og velg <strong>Legg til på Hjem-skjerm</strong>.</p>
+      <p>I vanlig nettleser kan adressefelt og knapper bruke noe av skjermplassen. En installert PWA gir en renere visning, men lokale data ligger fortsatt på enheten. Installasjon gir ikke automatisk synkronisering mellom enheter.</p>
     </article>
 
     <article class="help-article" id="offline">
@@ -107,6 +113,7 @@ export function renderHelpArticles(): string {
     <article class="help-article" id="laeringsutbytter">
       <h2>Om læringsutbyttene</h2>
       <p>Hvert kort kan knyttes til et læringsutbytte. Da ser du hvilken del av emnet kortet øver på, og du kan gjenbruke samme utbytte på flere kort.</p>
+      <p>I øving kan utbyttet være sammenfoldet på mobil, bak <strong>Utbytte</strong>. På større skjerm vises det mer åpent.</p>
     </article>
   `;
 }

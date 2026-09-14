@@ -24,8 +24,22 @@ export {
   sessionProgress,
   startSession,
 } from './storage/sessionStore';
-export { renderAnswerPanel } from './views/answerPanel';
+export { renderAnswerPanel, renderAnswerExtras, renderAnswerMain } from './views/answerPanel';
 export { renderStudy } from './views/study';
 export { renderSummary } from './views/summary';
 export { RATING_HELP, renderRatingHelpBody } from './content/ratingHelp';
 export { openRatingHelp } from './views/ratingHelp';
+export { dismissRotateTip, resetRotateTip, setRotateTipStatus, shouldShowRotateTip } from './storage/rotateTip';
+export {
+  FULLSCREEN_HELP,
+  PRACTICE_MOBILE_LEAD,
+  PRACTICE_SURFACE_HELP,
+  ROTATE_TIP_TEXT,
+  renderFullscreenHelp,
+  renderPracticeSurfaceHelp,
+} from './content/practiceUiHelp';
+export {
+  COMPACT_LANDSCAPE_QUERY,
+  PORTRAIT_TIP_QUERY,
+} from './views/studyLayout';
+export { supportsFullscreen } from './views/fullscreen';

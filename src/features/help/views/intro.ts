@@ -33,6 +33,7 @@ export async function showIntro(options: { force?: boolean } = {}): Promise<void
     handle.setBody(`
       <p class="muted">Steg ${step + 1} av ${INTRO_STEPS.length}</p>
       <p>${current.body}</p>
+      <p class="hint">Hopp over skjuler introduksjonen neste gang. Du finner den igjen under Hjelp. Escape eller trykk utenfor lukker bare for nå.</p>
     `);
     handle.setFooter(`
       <button class="button button--ghost" type="button" data-intro-skip>Hopp over</button>
@@ -52,7 +53,6 @@ export async function showIntro(options: { force?: boolean } = {}): Promise<void
     footer: '',
     onClose: () => {
       introVisible = false;
-      void markIntroSeen();
     },
   });
 

@@ -2,22 +2,29 @@ import { hasOwnFormulation, primaryAnswer, type CardRecord } from '@features/car
 import { escapeHtml, nl2br } from '@shared/utilities/html';
 
 export function renderAnswerPanel(card: CardRecord): string {
-  const own = hasOwnFormulation(card.userAnswer);
-  const answer = primaryAnswer(card.aiAnswer, card.userAnswer);
-
   return `
     <section id="svar" class="answer" data-answer-panel tabindex="-1">
-      ${own ? renderOwnAnswer(card, answer) : renderAiAnswer(card)}
+      ${renderAnswerMain(card)}
+      ${renderAnswerExtras(card)}
     </section>
   `;
+}
+
+export function renderAnswerMain(card: CardRecord): string {
+  const own = hasOwnFormulation(card.userAnswer);
+  const answer = primaryAnswer(card.aiAnswer, card.userAnswer);
+  return own ? renderOwnAnswer(card, answer) : renderAiAnswer(card);
+}
+
+export function renderAnswerExtras(card: CardRecord): string {
+  const extras = `${exampleHtml(card.example)}${sourceHtml(card.source, hasOwnFormulation(card.userAnswer) ? 'own' : 'ai')}`;
+  return extras.trim() === '' ? '' : `<div class="answer__extras">${extras}</div>`;
 }
 
 function renderOwnAnswer(card: CardRecord, answer: string): string {
   return `
     <h2>Mitt svar</h2>
     <p class="answer__primary">${nl2br(answer)}</p>
-    ${exampleHtml(card.example)}
-    ${sourceHtml(card.source, 'own')}
     <details class="answer__ai">
       <summary>Se opprinnelig AI-forslag</summary>
       <p class="answer__ai-heading">AI-generert forslag til svar</p>
@@ -30,8 +37,6 @@ function renderAiAnswer(card: CardRecord): string {
   return `
     <h2>AI-generert forslag til svar</h2>
     <p class="answer__primary">${nl2br(card.aiAnswer)}</p>
-    ${exampleHtml(card.example)}
-    ${sourceHtml(card.source, 'ai')}
   `;
 }
 

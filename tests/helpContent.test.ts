@@ -1,6 +1,18 @@
 import { describe, expect, it } from 'vitest';
-import { AI_DRAFT_WARNING, AI_STATUS_HELP, markIntroSeen, shouldShowIntro } from '@features/help';
-import { RATING_HELP } from '@features/practice-session';
+import {
+  AI_DRAFT_WARNING,
+  AI_STATUS_HELP,
+  HELP_SECTIONS,
+  markIntroSeen,
+  renderHelpArticles,
+  shouldShowIntro,
+} from '@features/help';
+import {
+  FULLSCREEN_HELP,
+  PRACTICE_MOBILE_LEAD,
+  RATING_HELP,
+  ROTATE_TIP_TEXT,
+} from '@features/practice-session';
 
 describe('help content', () => {
   it('shows the intro only the first time', async () => {
@@ -24,5 +36,28 @@ describe('help content', () => {
       'Gjennomgått',
       'Egen formulering',
     ]);
+  });
+
+  it('documents mobile practice from the shared practice-help copy', () => {
+    const html = renderHelpArticles();
+    expect(HELP_SECTIONS.some((section) => section.id === 'oving-pa-mobil')).toBe(true);
+    expect(html).toContain('id="oving-pa-mobil"');
+    expect(html).toContain(PRACTICE_MOBILE_LEAD);
+    expect(html).toContain(ROTATE_TIP_TEXT);
+    expect(html).toContain('forslag til svar');
+    expect(html).toContain('Mitt svar');
+    expect(html).toContain('Avslutt økten');
+    expect(html).toContain('rotasjonslås');
+    expect(html).toContain('stående visning');
+    expect(html).toContain('ikke som sikker fasit');
+    expect(html).not.toContain('Vis læringsutbytte');
+    expect(html).not.toContain('Til forsiden');
+    expect(html).not.toMatch(/<h2>Fasit<\/h2>/);
+    if (FULLSCREEN_HELP.available) {
+      expect(html).toContain('Fullskjerm');
+      expect(html).toContain('Avslutt fullskjerm');
+    } else {
+      expect(html).not.toContain('Fullskjerm');
+    }
   });
 });

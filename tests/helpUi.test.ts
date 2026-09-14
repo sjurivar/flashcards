@@ -10,10 +10,16 @@ import {
   openHelpDialog,
   renderHelpPage,
   resetIntroLock,
+  ROTATE_TIP_TEXT,
   shouldShowIntro,
   showIntro,
 } from '@features/help';
-import { openRatingHelp } from '@features/practice-session';
+import {
+  dismissRotateTip,
+  openRatingHelp,
+  resetRotateTip,
+  shouldShowRotateTip,
+} from '@features/practice-session';
 
 afterEach(() => {
   closeOpenHelpDialogs();
@@ -59,6 +65,21 @@ describe('help dialogs and page', () => {
 
     await showIntro({ force: true });
     expect(document.querySelector('[role="dialog"]')?.textContent).toContain('Svar før du ser forslaget');
+    expect(document.querySelector('[role="dialog"]')?.textContent).toContain('Hopp over skjuler introduksjonen neste gang');
+  });
+
+  it('does not persist the intro when it is dismissed temporarily', async () => {
+    expect(await shouldShowIntro()).toBe(true);
+    await maybeShowIntro();
+    document.querySelector('[role="dialog"]')?.closest('[data-help-dialog]')
+      ?.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+    await vi.waitFor(() => {
+      expect(document.querySelector('[role="dialog"]')).toBeNull();
+    });
+    expect(await shouldShowIntro()).toBe(true);
+    resetIntroLock();
+    await maybeShowIntro();
+    expect(document.querySelector('[role="dialog"]')).toBeTruthy();
   });
 
   it('shows rating repetition help', () => {
@@ -84,12 +105,31 @@ describe('help dialogs and page', () => {
     expect(href({ name: 'help', section: 'sikkerhetskopi' })).toBe('#/help/sikkerhetskopi');
     expect(parseHash('#/help/sikkerhetskopi')).toEqual({ name: 'help', section: 'sikkerhetskopi' });
     expect(root.querySelector('#sikkerhetskopi')).toBeTruthy();
+    expect(root.querySelector('#oving-pa-mobil')).toBeTruthy();
     expect(root.querySelector('a[href="#/help/sikkerhetskopi"]')).toBeTruthy();
+    expect(root.querySelector('a[href="#/help/oving-pa-mobil"]')).toBeTruthy();
     expect(root.querySelector('a[href="#/help/lagring"]')).toBeTruthy();
+    expect(root.textContent).toContain(ROTATE_TIP_TEXT);
     const exportLink = root.querySelector('a[href="#/data"]');
     expect(exportLink?.textContent).toContain('Gå til eksport og import');
 
     root.querySelector<HTMLButtonElement>('[data-replay-intro]')?.click();
     expect(document.querySelector('[role="dialog"]')?.textContent).toContain('Svar før du ser forslaget');
+  });
+
+  it('can restore a dismissed rotate tip from the help page', async () => {
+    await dismissRotateTip();
+    expect(await shouldShowRotateTip()).toBe(false);
+
+    const root = document.createElement('div');
+    await renderHelpPage(root);
+    root.querySelector<HTMLButtonElement>('[data-reset-rotate-tip]')?.click();
+    await vi.waitFor(async () => {
+      expect(await shouldShowRotateTip()).toBe(true);
+    });
+    expect(root.querySelector<HTMLElement>('[data-rotate-tip-status]')?.hidden).toBe(false);
+
+    await resetRotateTip();
+    expect(await shouldShowRotateTip()).toBe(true);
   });
 });

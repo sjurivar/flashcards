@@ -66,6 +66,8 @@ Appen bruker hash-ruting (`#/cards`, `#/practice`). Oppdatering og direkte åpni
 
 Etter første besøk på nett kan appen åpnes offline. Ny versjon vises med meldingen «En ny versjon av appen er klar» og knappen **Oppdater**. Lokale kort slettes ikke av oppdateringen.
 
+Øvingsmodus er responsiv. På liten skjerm i liggende retning brukes nesten hele flaten, og menyen skjules under økten. Fullskjerm er valgfritt når nettleseren støtter Fullscreen API. Detaljert brukerhjelp ligger i appen under **Hjelp**.
+
 ## Sikkerhetskopi av lokale data
 
 IndexedDB er knyttet til **origin** (protokoll + vert + port), ikke til URL-stien.
@@ -75,7 +77,7 @@ IndexedDB er knyttet til **origin** (protokoll + vert + port), ikke til URL-stie
 - Bytt av domene, nettleser eller enhet gir et tomt lager. Bytt av repository-sti på samme origin gjør det ikke.
 - Det finnes ingen automatisk synkronisering.
 
-Bruk **Data → Eksporter data** for JSON-sikkerhetskopi, og **Importer data** for å slå sammen eller erstatte på en ny adresse eller enhet.
+Bruk **Data → Eksporter data** for JSON-sikkerhetskopi, og **Importer data** for å slå sammen eller erstatte på en ny adresse eller enhet. Installasjon og fullskjerm synkroniserer ikke data.
 
 ## Arkitektur
 

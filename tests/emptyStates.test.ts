@@ -2,7 +2,8 @@
 
 import { describe, expect, it } from 'vitest';
 import { renderDashboard } from '@features/dashboard';
-import { renderCardList, saveCardDraft } from '@features/card-library';
+import { getCard, renderCardList, saveCardDraft } from '@features/card-library';
+import { startSession } from '@features/practice-session';
 
 describe('empty states', () => {
   it('offers actions when there are no cards', async () => {
@@ -33,6 +34,31 @@ describe('empty states', () => {
     await renderDashboard(root);
     expect(root.textContent).toContain('Ingen kort er klare akkurat nå. Du kan øve på alle kort eller komme tilbake senere.');
     expect(root.querySelector('[data-action="start-all"]')?.textContent).toContain('Øv på alle kort');
+  });
+
+  it('does not change repetition dates when starting practice on all cards', async () => {
+    const created = await saveCardDraft({
+      question: 'Senere kort',
+      aiAnswer: 'Svar',
+      userAnswer: '',
+      example: '',
+      source: '',
+      learningOutcomeText: 'Utbytte',
+      topic: 'Tema',
+      status: 'gjennomgatt',
+      isActive: true,
+    }, null);
+    if (!created.ok) {
+      throw new Error('Could not create card');
+    }
+    const dueAt = '2099-01-01T00:00:00.000Z';
+    const { getDatabase } = await import('@shared/storage/database');
+    await getDatabase().cards.update(created.card.id, { nextRepetitionAt: dueAt, lastRating: 'kan' });
+
+    await startSession('all');
+    const card = await getCard(created.card.id);
+    expect(card?.nextRepetitionAt).toBe(dueAt);
+    expect(card?.lastRating).toBe('kan');
   });
 
   it('shows a clear action when a library filter has no matches', async () => {

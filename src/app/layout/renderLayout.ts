@@ -4,6 +4,13 @@ import { escapeHtml } from '@shared/utilities/html';
 import { bindSiteNav } from './siteNav';
 
 export function renderLayout(root: HTMLElement, route: Route, content: string): void {
+  const practicing = route.name === 'practice';
+  document.documentElement.classList.toggle('is-practice', practicing);
+  document.body.classList.toggle('is-practice', practicing);
+  if (!practicing) {
+    exitFullscreenIfNeeded();
+  }
+
   const flash = pullFlash();
   const nav = route.name === 'cards' || route.name === 'card-new' || route.name === 'card-edit'
     ? 'cards'
@@ -59,4 +66,14 @@ export function pageRoot(): HTMLElement {
     throw new Error('Siden ble ikke funnet.');
   }
   return page;
+}
+
+function exitFullscreenIfNeeded(): void {
+  const doc = document as Document & {
+    webkitFullscreenElement?: Element | null;
+    webkitExitFullscreen?: () => void;
+  };
+  if (doc.fullscreenElement || doc.webkitFullscreenElement) {
+    void (doc.exitFullscreen?.() ?? doc.webkitExitFullscreen?.());
+  }
 }

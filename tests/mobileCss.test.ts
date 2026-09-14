@@ -29,4 +29,14 @@ describe('mobile and desktop layout CSS', () => {
     expect(css).toContain('.status-badge--ai_utkast');
     expect(css).toContain('.status-badge__icon');
   });
+
+  it('uses a compact practice surface in short landscape viewports', () => {
+    expect(css).toContain('(orientation: landscape) and (max-height: 540px) and (max-width: 1100px)');
+    expect(css).toContain('body.is-practice .site-header');
+    expect(css).toContain('display: none');
+    expect(css).toContain('.study-board');
+    expect(css).toContain('grid-template-columns: minmax(0, 1.35fr) minmax(13.25rem, 0.85fr)');
+    expect(css).toContain('safe-area-inset-left');
+    expect(css).toContain('100svh');
+  });
 });

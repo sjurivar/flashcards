@@ -107,6 +107,8 @@ export function openHelpDialog(options: HelpDialogOptions): HelpDialogHandle {
     }
   }, { signal });
 
+  window.addEventListener('hashchange', close, { signal });
+
   document.body.append(backdrop);
   openCount += 1;
   document.getElementById('app')?.setAttribute('aria-hidden', 'true');

@@ -11,6 +11,9 @@ export default defineConfig({
       '@features': resolve(rootDir, 'src/features'),
     },
   },
+  define: {
+    'import.meta.env.BASE_URL': JSON.stringify('/'),
+  },
   test: {
     environment: 'node',
     setupFiles: ['tests/setup.ts'],

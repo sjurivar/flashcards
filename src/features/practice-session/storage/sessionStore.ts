@@ -2,7 +2,7 @@ import { SCHEMA_VERSION, isRating, type Rating } from '@shared/types';
 import { getDatabase } from '@shared/storage/database';
 import { nowUtcIso } from '@shared/utilities/clock';
 import { createId, createToken } from '@shared/utilities/id';
-import { listDueCards, updateCardAfterRating } from '@features/card-library';
+import { listActiveCards, listDueCards, updateCardAfterRating } from '@features/card-library';
 import {
   applyRating,
   currentCardId,
@@ -54,13 +54,13 @@ export async function getActiveSession(): Promise<PracticeSessionRecord | undefi
   return id ? getSession(id) : undefined;
 }
 
-export async function startSession(): Promise<PracticeSessionRecord> {
-  const due = await listDueCards();
-  if (due.length === 0) {
-    throw new Error('Ingen kort er klare for øving.');
+export async function startSession(scope: 'due' | 'all' = 'due'): Promise<PracticeSessionRecord> {
+  const cards = scope === 'all' ? await listActiveCards() : await listDueCards();
+  if (cards.length === 0) {
+    throw new Error(scope === 'all' ? 'Ingen aktive kort å øve på.' : 'Ingen kort er klare for øving.');
   }
 
-  const queue = startQueue(due.map((card) => card.id));
+  const queue = startQueue(cards.map((card) => card.id));
   const session: PracticeSessionRecord = {
     id: createId(),
     startedAt: nowUtcIso(),

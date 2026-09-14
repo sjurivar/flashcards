@@ -6,6 +6,7 @@ import { renderCardForm, renderCardList } from '@features/card-library';
 import { renderDashboard } from '@features/dashboard';
 import { renderDataPage } from '@features/data-transfer';
 import { ensureExampleData } from '@features/example-data';
+import { maybeShowIntro, renderHelpPage } from '@features/help';
 import { renderStudy, renderSummary } from '@features/practice-session';
 import { href } from '@app/routing/router';
 
@@ -44,6 +45,9 @@ async function renderRoute(route: Route): Promise<void> {
       case 'data':
         await renderDataPage(page);
         break;
+      case 'help':
+        await renderHelpPage(page, route.section);
+        break;
       default:
         page.innerHTML = `
           <section class="panel">
@@ -75,13 +79,17 @@ function titleFor(route: Route): string {
       return 'Øktoppsummering – Flashcards';
     case 'data':
       return 'Data – Flashcards';
+    case 'help':
+      return 'Hjelp – Flashcards';
     default:
       return 'Flashcards';
   }
 }
 
 startRouter((route) => {
-  void renderRoute(route);
+  void renderRoute(route).then(() => {
+    void maybeShowIntro();
+  });
 });
 
 void registerPwa();

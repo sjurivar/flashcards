@@ -6,6 +6,7 @@ export type Route =
   | { name: 'practice' }
   | { name: 'summary'; id: string }
   | { name: 'data' }
+  | { name: 'help'; section?: string }
   | { name: 'not-found' };
 
 export function parseHash(hash = window.location.hash): Route {
@@ -33,6 +34,9 @@ export function parseHash(hash = window.location.hash): Route {
   if (parts[0] === 'data') {
     return { name: 'data' };
   }
+  if (parts[0] === 'help') {
+    return { name: 'help', section: parts[1] };
+  }
   return { name: 'not-found' };
 }
 
@@ -52,6 +56,8 @@ export function toHash(route: Route): string {
       return `#/practice/summary/${route.id}`;
     case 'data':
       return '#/data';
+    case 'help':
+      return route.section ? `#/help/${route.section}` : '#/help';
     default:
       return '#/';
   }

@@ -24,5 +24,8 @@ export {
   sessionProgress,
   startSession,
 } from './storage/sessionStore';
+export { renderAnswerPanel } from './views/answerPanel';
 export { renderStudy } from './views/study';
 export { renderSummary } from './views/summary';
+export { RATING_HELP, renderRatingHelpBody } from './content/ratingHelp';
+export { openRatingHelp } from './views/ratingHelp';

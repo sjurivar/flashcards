@@ -8,6 +8,7 @@ vendor/
 *.local
 logs/
 tmp/
+tmp-screenshots/
 *.log
 .phpunit.result.cache
 .DS_Store

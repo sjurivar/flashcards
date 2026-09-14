@@ -1,9 +1,11 @@
-import { SCHEMA_VERSION, type Origin, type Rating } from '@shared/types';
+import { SCHEMA_VERSION, type CardStatus, type Origin, type Rating } from '@shared/types';
 import { getDatabase } from '@shared/storage/database';
 import { isDueAt, nowUtcIso } from '@shared/utilities/clock';
 import { createId } from '@shared/utilities/id';
 import { ensureOutcome } from '@features/learning-outcomes';
 import type { CardDraft, CardRecord } from '../domain/card';
+import { hasOwnFormulation } from '../domain/answerResolver';
+import { resolveCardStatus } from '../domain/resolveStatus';
 import { optionalText, validateCardDraft } from '../domain/validateCard';
 
 export async function listCards(): Promise<CardRecord[]> {
@@ -21,6 +23,10 @@ export async function putCard(record: CardRecord): Promise<void> {
 
 export async function listDueCards(now = new Date()): Promise<CardRecord[]> {
   return (await listCards()).filter((card) => card.isActive && isDueAt(card.nextRepetitionAt, now));
+}
+
+export async function listActiveCards(): Promise<CardRecord[]> {
+  return (await listCards()).filter((card) => card.isActive);
 }
 
 export async function countDueCards(now = new Date()): Promise<number> {
@@ -65,7 +71,7 @@ export async function saveCardDraft(
     source: optionalText(draft.source),
     learningOutcomeId: outcome.id,
     topic: draft.topic.trim(),
-    status: draft.status,
+    status: resolveCardStatus(draft.userAnswer, draft.status),
     isActive: draft.isActive,
     createdAt: existing?.createdAt ?? now,
     updatedAt: now,
@@ -76,6 +82,30 @@ export async function saveCardDraft(
   };
   await putCard(card);
   return { ok: true, card };
+}
+
+export async function markCardReviewed(id: string): Promise<CardRecord> {
+  const card = await getCard(id);
+  if (!card) {
+    throw new Error('Kortet finnes ikke.');
+  }
+  if (hasOwnFormulation(card.userAnswer)) {
+    return card;
+  }
+  const updated = { ...card, status: 'gjennomgatt' as const, updatedAt: nowUtcIso() };
+  await putCard(updated);
+  return updated;
+}
+
+export async function setCardStatus(id: string, status: CardStatus): Promise<CardRecord> {
+  const card = await getCard(id);
+  if (!card) {
+    throw new Error('Kortet finnes ikke.');
+  }
+  const next = resolveCardStatus(card.userAnswer, status);
+  const updated = { ...card, status: next, updatedAt: nowUtcIso() };
+  await putCard(updated);
+  return updated;
 }
 
 export async function setCardActive(id: string, isActive: boolean): Promise<void> {

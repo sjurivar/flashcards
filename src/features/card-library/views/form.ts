@@ -1,9 +1,12 @@
 import { href, navigate } from '@app/routing/router';
 import { CARD_STATUS_LABELS, type CardStatus } from '@shared/types';
 import { setFlash } from '@shared/ui/flash';
+import { CARD_STATUS_HINTS } from '@shared/ui/statusBadge';
 import { escapeAttr, escapeHtml } from '@shared/utilities/html';
 import { listOutcomes } from '@features/learning-outcomes';
 import { emptyCardDraft, type CardDraft, type CardRecord } from '../domain/card';
+import { hasOwnFormulation } from '../domain/answerResolver';
+import { resolveCardStatus } from '../domain/resolveStatus';
 import { MAX_SOURCE, MAX_TEXT, MAX_TOPIC, type CardErrors } from '../domain/validateCard';
 import { getCard, saveCardDraft } from '../storage/cardStore';
 
@@ -54,29 +57,35 @@ function paint(
         ${field('topic', 'Tema', input('topic', values.topic, MAX_TOPIC, errors.topic, true))}
         ${field('question', 'Spørsmål', area('question', values.question, 4, errors.question, true))}
         ${field('learningOutcomeText', 'Læringsutbytte', `
+          <p class="hint">Hva kortet bidrar til å øve på. Du kan gjenbruke samme tekst på flere kort.</p>
           <input id="learningOutcomeText" name="learningOutcomeText" list="outcome-list" required maxlength="${MAX_TEXT}" value="${escapeAttr(values.learningOutcomeText)}" ${errors.learningOutcomeText ? 'aria-invalid="true"' : ''}>
           <datalist id="outcome-list">${outcomeOptions.map((text) => `<option value="${escapeAttr(text)}"></option>`).join('')}</datalist>
           ${error('learningOutcomeText', errors.learningOutcomeText)}
         `)}
         <fieldset class="answer-group">
           <legend>AI-generert svar</legend>
-          <p class="hint">Dette er fasit-/eksempelsvaret. Det lagres separat fra din egen formulering.</p>
-          ${field('aiAnswer', 'AI-svar', area('aiAnswer', values.aiAnswer, 5, errors.aiAnswer, true))}
+          <p class="hint">Opprinnelig forslag fra kildematerialet. Dette er ikke automatisk en fasit, og det lagres separat fra din egen formulering.</p>
+          ${field('aiAnswer', 'AI-generert forslag', area('aiAnswer', values.aiAnswer, 5, errors.aiAnswer, true))}
         </fieldset>
         <fieldset class="answer-group answer-group--own">
-          <legend>Din egen formulering</legend>
-          <p class="hint">Valgfritt. Når dette feltet er fylt ut, blir det hovedsvaret i øvingen.</p>
-          ${field('userAnswer', 'Egen formulering', area('userAnswer', values.userAnswer, 5, errors.userAnswer, false))}
+          <legend>Min formulering</legend>
+          <p class="hint">Ditt bearbeidede hovedsvar. Når du lagrer et eget svar, blir det hovedsvaret i øvingen og status settes automatisk til «Egen formulering». AI-forslaget beholdes som referanse.</p>
+          ${field('userAnswer', 'Mitt svar', area('userAnswer', values.userAnswer, 5, errors.userAnswer, false))}
         </fieldset>
         ${field('example', 'Eksempel eller praksissituasjon', area('example', values.example, 3, errors.example, false))}
-        ${field('source', 'Kilde', input('source', values.source, MAX_SOURCE, errors.source, false))}
+        ${field('source', 'Kilde', `
+          ${input('source', values.source, MAX_SOURCE, errors.source, false)}
+          <p class="hint">Hvor opplysningene kommer fra, for eksempel «Forelesning om universell utforming, lysbilde 14». Kilden er ikke det samme som AI-teksten og bør kontrolleres.</p>
+        `)}
         <div class="field">
           <label for="status">Status</label>
+          <p class="hint">Hvor langt kortet er kvalitetssikret: AI-utkast (ikke gjennomgått), gjennomgått (kontrollert) eller egen formulering (du har skrevet hovedsvaret).</p>
           <select id="status" name="status" required>
             ${Object.entries(CARD_STATUS_LABELS).map(([value, label]) => `
               <option value="${value}"${values.status === value ? ' selected' : ''}>${escapeHtml(label)}</option>
             `).join('')}
           </select>
+          <p class="hint" data-status-hint>${escapeHtml(statusFieldHint(values.userAnswer, values.status))}</p>
         </div>
         <div class="field field--check">
           <input id="isActive" name="isActive" type="checkbox" value="1"${values.isActive ? ' checked' : ''}>
@@ -109,6 +118,7 @@ function paint(
       status: String(data.get('status') ?? 'ai_utkast') as CardStatus,
       isActive: data.get('isActive') === '1',
     };
+    draft.status = resolveCardStatus(draft.userAnswer, draft.status);
     const result = await saveCardDraft(draft, existing);
     if (!result.ok) {
       form.dataset.submitted = '0';
@@ -118,6 +128,38 @@ function paint(
     setFlash('success', isEdit ? 'Kortet er oppdatert.' : 'Kortet er opprettet.');
     navigate({ name: 'cards' });
   });
+
+  bindStatusSync(form);
+}
+
+function bindStatusSync(form: HTMLFormElement | null): void {
+  const userAnswer = form?.querySelector<HTMLTextAreaElement>('#userAnswer');
+  const status = form?.querySelector<HTMLSelectElement>('#status');
+  const hint = form?.querySelector('[data-status-hint]');
+  if (!form || !userAnswer || !status || !hint) {
+    return;
+  }
+
+  const sync = (): void => {
+    const next = resolveCardStatus(userAnswer.value, status.value as CardStatus);
+    if (hasOwnFormulation(userAnswer.value) && status.value !== 'egen_formulering') {
+      status.value = 'egen_formulering';
+    }
+    hint.textContent = statusFieldHint(userAnswer.value, next);
+  };
+
+  userAnswer.addEventListener('input', sync);
+  status.addEventListener('change', sync);
+}
+
+function statusFieldHint(userAnswer: string, status: CardStatus): string {
+  if (hasOwnFormulation(userAnswer)) {
+    return CARD_STATUS_HINTS.egen_formulering;
+  }
+  if (status === 'gjennomgatt') {
+    return CARD_STATUS_HINTS.gjennomgatt;
+  }
+  return 'Velg «Gjennomgått» når du har kontrollert AI-forslaget uten å skrive et eget svar. «Egen formulering» settes automatisk når eget svar er fylt ut.';
 }
 
 function field(id: string, label: string, control: string): string {

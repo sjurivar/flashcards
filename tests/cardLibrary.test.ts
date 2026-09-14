@@ -50,6 +50,26 @@ describe('card library', () => {
     expect(updated.card.question).toContain('innebærer');
     expect(updated.card.aiAnswer).toBe('Oppdatert AI');
     expect(updated.card.userAnswer).toBe('Oppdatert egen');
+    expect(updated.card.status).toBe('egen_formulering');
     expect((await listCards()).length).toBe(1);
+  });
+
+  it('sets egen_formulering automatically when an own answer is saved', async () => {
+    const created = await saveCardDraft({
+      question: 'Hva er relasjonsarbeid?',
+      aiAnswer: 'AI-forslag',
+      userAnswer: 'Min formulering',
+      example: '',
+      source: '',
+      learningOutcomeText: 'Kan anvende relasjonsarbeid.',
+      topic: 'Relasjonsarbeid',
+      status: 'ai_utkast',
+      isActive: true,
+    }, null);
+    expect(created.ok).toBe(true);
+    if (!created.ok) {
+      return;
+    }
+    expect(created.card.status).toBe('egen_formulering');
   });
 });
